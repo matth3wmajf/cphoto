@@ -3,20 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-/*
- *	Our color type, it should be exactly 32-bits in size.
- *	It can be accessed as a neat structure or as an array. Either way, both
- *	are equally fast and have their own advantages in terms of ease of use.
- */
-typedef union
-{
-	struct
-	{
-		uint8_t r, g, b, a;
-	} value;
-	
-	uint8_t array[4];
-} color3_t;
+#include <cphoto/numeric.h>
 
 /*
  *	A basic framebuffer type, which serves as our intermediate image, which we
