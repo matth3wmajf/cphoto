@@ -55,31 +55,63 @@ int framebuffer_delete(framebuffer_t *framebuffer)
 	return 0;
 }
 
-/* Randomize the framebuffer's contents. */
-int framebuffer_randomize(framebuffer_t* framebuffer)
+/* Render to the framebuffer's contents. */
+int framebuffer_render(framebuffer_t* framebuffer, object_t* object_buffer, uintmax_t object_buffer_size)
 {
-    if(framebuffer == NULL || framebuffer->pixels == NULL) return -1;
+	/* Return with error if a required argument is passed as nullified. */
+	if(framebuffer == NULL || object_buffer == NULL || object_buffer_size == 0) return -1;
 
-	/* Set a new seed for the random number generator, based on the time. */
-    srand((unsigned int) time(NULL));
+	/* Calculate the aspect ratio. */
+	floatmax_t l_aspect_ratio = (floatmax_t)framebuffer->width / framebuffer->height;
 
-	/* Iterate over each row in the framebuffer. */
-    for(uintmax_t l_y = 0; l_y < framebuffer->height; l_y++)
+	/* The lower-left corner. */
+	floatmax_vector3_t l_lower_left_corner = (floatmax_vector3_t){-l_aspect_ratio, -1.0, -1.0};
+
+	/* The horizontal & vertical vectors. */
+	floatmax_vector3_t l_horizontal = (floatmax_vector3_t){2.0 * l_aspect_ratio, 0.0, 0.0}, l_vertical = (floatmax_vector3_t){0.0, 2.0, 0.0};
+
+	/* The origin. */
+	floatmax_vector3_t l_origin = (floatmax_vector3_t){0.0, 0.0, 0.0};
+
+	/* Loop for each scanline in the framebuffer. */
+	for(uintmax_t l_x = 0; l_x < framebuffer->width; l_x++)
 	{
-		/* Iterate over each pixel in the row. */
-        for(uintmax_t l_x = 0; l_x < framebuffer->width; l_x++)
+		/* Loop for each pixel in the scanline. */
+		for(uintmax_t l_y = 0; l_y < framebuffer->height; l_y++)
 		{
-			/*
-			 *	Get the pixel we're iterating through, and set it's color
-			 *	based on a random number.
-			 */
-            color3_t* l_pixel = &framebuffer->pixels[l_y * framebuffer->width + l_x];
-            l_pixel->value.r = (uint8_t) rand() % 256;
-            l_pixel->value.g = (uint8_t) rand() % 256;
-            l_pixel->value.b = (uint8_t) rand() % 256;
-            l_pixel->value.a = 255;
-        }
-    }
+			/* Obtain the current pixel we're working with. */
+			color3_t *l_pixel = &framebuffer->pixels[l_y * framebuffer->width + l_x];
+
+			/* The normalized coordinates. */
+			floatmax_vector2_t l_normalized_coordinates = (floatmax_vector2_t){
+				(floatmax_t)l_x / (framebuffer->width - 1),
+				(floatmax_t)l_y / (framebuffer->height - 1)
+			};
+
+			/* The normalized color. */
+			floatmax_vector3_t l_color;
+
+			/* Create the ray, set it's origin, and it's direction. */
+			floatmax_vector3_t l_ray_direction;
+            l_ray_direction = floatmax_vector3_add(l_lower_left_corner, floatmax_vector3_add(floatmax_vector3_multiply_scalar(l_horizontal, l_normalized_coordinates.value.x), floatmax_vector3_multiply_scalar(l_vertical, l_normalized_coordinates.value.y)));
+            l_ray_direction = floatmax_vector3_normalize(l_ray_direction);
+
+            /* Create the ray, set its origin, and its direction. */
+            ray_t l_ray;
+            l_ray.origin = l_origin;
+            l_ray.direction = l_ray_direction;
+
+			/* Calculate the color by intersecting. */
+			ray_obtain(&l_ray, &l_color, object_buffer, object_buffer_size);
+
+			/* Set the pixel's color. */
+			*l_pixel = (color3_t){
+				255.99 * l_color.value.x,
+				255.99 * l_color.value.y,
+				255.99 * l_color.value.z
+			};
+		}
+	}
 
 	return 0;
 }

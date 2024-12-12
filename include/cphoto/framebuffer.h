@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include <cphoto/object.h>
 #include <cphoto/numeric.h>
 
 /*
@@ -17,6 +18,6 @@ typedef struct
 
 int framebuffer_create(framebuffer_t *framebuffer);
 int framebuffer_resize(framebuffer_t *framebuffer, uintmax_t width, uintmax_t height);
-int framebuffer_randomize(framebuffer_t* framebuffer);
+int framebuffer_render(framebuffer_t* framebuffer, object_t* object_buffer, uintmax_t object_buffer_size);
 int framebuffer_delete(framebuffer_t *framebuffer);
 int framebuffer_dump(framebuffer_t* framebuffer, FILE* file);
