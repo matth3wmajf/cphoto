@@ -15,5 +15,10 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 # compile into this executable?
 add_executable(cphoto ${SOURCES})
 
-# We need the C math library. It's vital.
-target_link_libraries(cphoto m)
+# Find the math library.
+find_library(MATH_LIBRARY m)
+
+# If it's found, add it to the executable.
+if(MATH_LIBRARY)
+    target_link_libraries(cphoto PUBLIC ${MATH_LIBRARY})
+endif()
