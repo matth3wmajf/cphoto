@@ -1,5 +1,6 @@
+#include <time.h>
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 #include <cphoto/object.h>
 #include <cphoto/ray.h>
@@ -8,6 +9,9 @@
 
 int main(int argc, char* argv[])
 {
+	/* Seed the randomness. */
+	srand(time(NULL));
+
 	/* Declare the framebuffer handle. */
 	framebuffer_t l_framebuffer;
 
@@ -20,20 +24,18 @@ int main(int argc, char* argv[])
 	uintmax_t l_object_buffer_size = 0;
 
 	/* Re-size the buffer to store two spheres. */
-	l_object_buffer_size += 2;
+	l_object_buffer_size += (uintmax_t)rand() % 25 + 5;
 	l_object_buffer = realloc(l_object_buffer, l_object_buffer_size * sizeof(object_t));
 
 	/* Populate the buffer... */
-	l_object_buffer[0].type = OBJECT_TYPE_SPHERE;
-	l_object_buffer[0].data.sphere.center = (floatmax_vector3_t){0.0, 0.0, -1.0};
-	l_object_buffer[0].data.sphere.radius = 0.5;
-	l_object_buffer[0].data.sphere.color = (floatmax_vector3_t){1.0, 0.0, 0.0};
-	l_object_buffer[0].data.sphere.transparency = 0.1;
-	l_object_buffer[1].type = OBJECT_TYPE_SPHERE;
-	l_object_buffer[1].data.sphere.center = (floatmax_vector3_t){0.0, -100.5, -1.0};
-	l_object_buffer[1].data.sphere.radius = 100;
-	l_object_buffer[1].data.sphere.color = (floatmax_vector3_t){0.0, 1.0, 0.0};
-	l_object_buffer[1].data.sphere.transparency = 0.0;
+	for(uintmax_t l_i = 0; l_i < l_object_buffer_size; l_i++)
+	{
+		l_object_buffer[l_i].type = OBJECT_TYPE_SPHERE;
+		l_object_buffer[l_i].data.sphere.center = (floatmax_vector3_t){((floatmax_t)rand() / RAND_MAX) * 4.0 - 2.0, ((floatmax_t)rand() / RAND_MAX) * 4.0 - 2.0, (((floatmax_t)rand() / RAND_MAX) * 4.0 - 2.0) - 5.0};
+		l_object_buffer[l_i].data.sphere.radius = (floatmax_t)rand() / RAND_MAX;
+		l_object_buffer[l_i].data.sphere.color = (floatmax_vector3_t){(floatmax_t)rand() / RAND_MAX, (floatmax_t)rand() / RAND_MAX, (floatmax_t)rand() / RAND_MAX};
+		l_object_buffer[l_i].data.sphere.transparency = (floatmax_t)rand() / RAND_MAX;
+	}
 
 	/* Raytrace the objects to the framebuffer. */
 	framebuffer_render(&l_framebuffer, l_object_buffer, l_object_buffer_size);
