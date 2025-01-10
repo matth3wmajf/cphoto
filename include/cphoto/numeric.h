@@ -136,3 +136,13 @@ static inline floatmax_vector3_t floatmax_vector3_multiply_scalar(floatmax_vecto
 {
 	return (floatmax_vector3_t){a.value.x * scalar, a.value.y * scalar, a.value.z * scalar};
 }
+
+/* Clamp a `floatmax_vector3_t` object. */
+static inline floatmax_vector3_t floatmax_vector3_clamp(floatmax_vector3_t v, floatmax_t min, floatmax_t max)
+{
+	floatmax_vector3_t result;
+	result.value.x = fmax(min, fmin(v.value.x, max));
+	result.value.y = fmax(min, fmin(v.value.y, max));
+	result.value.z = fmax(min, fmin(v.value.z, max));
+	return result;
+}

@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <malloc.h>
+#include <stdlib.h>
 
 #include <cphoto/object.h>
 #include <cphoto/ray.h>
@@ -10,6 +11,10 @@
 
 int ray_obtain(ray_t *ray, floatmax_vector3_t *color, object_t *object_buffer, uintmax_t object_buffer_size)
 {
+	/* Max recursion depth to prevent infinite loops. */
+	static const int l_max_depth = 16;
+	static int l_current_depth = 0;
+
 	/* Keep track of the closest hit. */
 	floatmax_t l_closest_hit = -1.0;
 	floatmax_vector3_t l_hit_color = {0.0, 0.0, 0.0};
@@ -18,13 +23,15 @@ int ray_obtain(ray_t *ray, floatmax_vector3_t *color, object_t *object_buffer, u
 	floatmax_vector3_t l_accumulated_color = {0.0, 0.0, 0.0};
 	floatmax_t l_remaining_transparency = 1.0;
 
+	l_current_depth++;
+
 	/* Iterate over all objects. */
 	for(uintmax_t l_i = 0; l_i < object_buffer_size; l_i++)
 	{
 		/*
-		 *	Follow intersection logic for spheres if our current object is a
-		 *	sphere.
-		 */
+		*	Follow intersection logic for spheres if our current object is a
+		*	sphere.
+		*/
 		if(object_buffer[l_i].type == OBJECT_TYPE_SPHERE)
 		{
 			/* The ray to sphere intersection. */
@@ -37,26 +44,48 @@ int ray_obtain(ray_t *ray, floatmax_vector3_t *color, object_t *object_buffer, u
 			/* Check if the ray hits the sphere. */
 			if(l_discriminant >= 0)
 			{
-				/* The closest root. */
 				floatmax_t l_root = (-l_b - sqrtl(l_discriminant)) / (2.0 * l_a);
-				
-				/*
-				 *	If bigger than zero, accumulate the color & remaining
-				 *	transparency.
-				 */
+
 				if(l_root > 0.0)
 				{
-					/* Accumulate color with transparency. */
-					l_accumulated_color.value.x += object_buffer[l_i].data.sphere.color.value.x * l_remaining_transparency * (1.0 - object_buffer[l_i].data.sphere.transparency);
-					l_accumulated_color.value.y += object_buffer[l_i].data.sphere.color.value.y * l_remaining_transparency * (1.0 - object_buffer[l_i].data.sphere.transparency);
-					l_accumulated_color.value.z += object_buffer[l_i].data.sphere.color.value.z * l_remaining_transparency * (1.0 - object_buffer[l_i].data.sphere.transparency);
-					
-					/* Calculate the remaining transparency. */
-					l_remaining_transparency *= object_buffer[l_i].data.sphere.transparency;
+					floatmax_vector3_t l_hit_point = floatmax_vector3_add(ray->origin, floatmax_vector3_multiply_scalar(ray->direction, l_root));
+
+					floatmax_vector3_t l_normal = floatmax_vector3_normalize(floatmax_vector3_subtract(l_hit_point, object_buffer[l_i].data.sphere.center));
+
+					floatmax_vector3_t l_random_dir;
+					do {
+						floatmax_t u1 = (floatmax_t)rand() / RAND_MAX;
+						floatmax_t u2 = (floatmax_t)rand() / RAND_MAX;
+						floatmax_t r = sqrt(u1);
+						floatmax_t theta = 2 * M_PI * u2;
+						floatmax_vector3_t l_disk_point = {r * cos(theta), r * sin(theta), 0};
+
+						// Project onto the hemisphere using the normal
+						l_random_dir = floatmax_vector3_normalize(floatmax_vector3_add(l_normal, l_disk_point));
+					} while (floatmax_vector3_dot(l_random_dir, l_normal) <= 0.0);
+
+					ray_t l_next_ray;
+					l_next_ray.origin = l_hit_point;
+					l_next_ray.direction = l_random_dir;
+
+					floatmax_vector3_t l_next_color;
+					if(l_current_depth < l_max_depth)
+					{
+						ray_obtain(&l_next_ray, &l_next_color, object_buffer, object_buffer_size);
+						l_accumulated_color = floatmax_vector3_add(l_accumulated_color, floatmax_vector3_multiply_scalar(l_next_color, object_buffer[l_i].data.sphere.diffuse));
+					}
+					else
+					{
+						l_accumulated_color = floatmax_vector3_add(l_accumulated_color, object_buffer[l_i].data.sphere.color);
+					}
+
+					break;
 				}
 			}
 		}
 	}
+
+	l_current_depth--;
 
 	/* The direction. */
 	floatmax_vector3_t l_unit_direction = floatmax_vector3_normalize(ray->direction);

@@ -19,6 +19,7 @@ typedef struct
 			floatmax_t radius;
 			floatmax_vector3_t color;
 			floatmax_t transparency;
+			floatmax_t diffuse;
 		} sphere;
 	} data;
 } object_t;

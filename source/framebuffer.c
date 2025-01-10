@@ -79,36 +79,42 @@ int framebuffer_render(framebuffer_t* framebuffer, object_t* object_buffer, uint
 		/* Loop for each pixel in the scanline. */
 		for(uintmax_t l_y = 0; l_y < framebuffer->height; l_y++)
 		{
-			/* Obtain the current pixel we're working with. */
 			color3_t *l_pixel = &framebuffer->pixels[l_y * framebuffer->width + l_x];
+			floatmax_vector3_t l_pixel_color = {0.0, 0.0, 0.0};
 
-			/* The normalized coordinates. */
-			floatmax_vector2_t l_normalized_coordinates = (floatmax_vector2_t){
-				(floatmax_t)l_x / (framebuffer->width - 1),
-				(floatmax_t)l_y / (framebuffer->height - 1)
-			};
+			const uintmax_t l_samples_per_pixel = 4;
 
-			/* The normalized color. */
-			floatmax_vector3_t l_color;
+			for(uintmax_t l_s = 0; l_s < l_samples_per_pixel; ++l_s)
+			{
+				floatmax_t l_u = (floatmax_t)(l_x + (double)rand() / RAND_MAX) / (framebuffer->width -1);
+				floatmax_t l_v = (floatmax_t)(l_y + (double)rand() / RAND_MAX) / (framebuffer->height -1);
 
-			/* Create the ray, set it's origin, and it's direction. */
-			floatmax_vector3_t l_ray_direction;
-            l_ray_direction = floatmax_vector3_add(l_lower_left_corner, floatmax_vector3_add(floatmax_vector3_multiply_scalar(l_horizontal, l_normalized_coordinates.value.x), floatmax_vector3_multiply_scalar(l_vertical, l_normalized_coordinates.value.y)));
-            l_ray_direction = floatmax_vector3_normalize(l_ray_direction);
+				floatmax_vector3_t l_ray_direction;
+				l_ray_direction = floatmax_vector3_add(l_lower_left_corner, floatmax_vector3_add(floatmax_vector3_multiply_scalar(l_horizontal, l_u), floatmax_vector3_multiply_scalar(l_vertical, l_v)));
+				l_ray_direction = floatmax_vector3_normalize(l_ray_direction);
 
-            /* Create the ray, set its origin, and its direction. */
-            ray_t l_ray;
-            l_ray.origin = l_origin;
-            l_ray.direction = l_ray_direction;
+				ray_t l_ray;
+				l_ray.origin = l_origin;
+				l_ray.direction = l_ray_direction;
 
-			/* Calculate the color by intersecting. */
-			ray_obtain(&l_ray, &l_color, object_buffer, object_buffer_size);
+				floatmax_vector3_t l_color;
+				ray_obtain(&l_ray, &l_color, object_buffer, object_buffer_size);
 
-			/* Set the pixel's color. */
+				l_pixel_color.value.x += l_color.value.x;
+				l_pixel_color.value.y += l_color.value.y;
+				l_pixel_color.value.z += l_color.value.z;
+			}
+
+			/* ... */
+			l_pixel_color.value.x /= l_samples_per_pixel;
+			l_pixel_color.value.y /= l_samples_per_pixel;
+			l_pixel_color.value.z /= l_samples_per_pixel;
+
+
 			*l_pixel = (color3_t){
-				255.99 * l_color.value.x,
-				255.99 * l_color.value.y,
-				255.99 * l_color.value.z
+				255.99 * l_pixel_color.value.x,
+				255.99 * l_pixel_color.value.y,
+				255.99 * l_pixel_color.value.z
 			};
 		}
 	}
